@@ -1325,6 +1325,7 @@ $(eval $(call KernelPackage,usb-net-rtl8150))
 define KernelPackage/usb-net-rtl8152
   TITLE:=Kernel module for USB-to-Ethernet Realtek convertors
   KCONFIG:=CONFIG_USB_RTL8152
+  DEPENDS:=+!LINUX_5_4:r8169-firmware
   FILES:=$(LINUX_DIR)/drivers/$(USBNET_DIR)/r8152.ko
   AUTOLOAD:=$(call AutoProbe,r8152)
   $(call AddDepends/usb-net)
@@ -1389,7 +1390,7 @@ define KernelPackage/usb-net-cdc-ncm
   KCONFIG:=CONFIG_USB_NET_CDC_NCM
   FILES:= $(LINUX_DIR)/drivers/$(USBNET_DIR)/cdc_ncm.ko
   AUTOLOAD:=$(call AutoProbe,cdc_ncm)
-  $(call AddDepends/usb-net)
+  $(call AddDepends/usb-net,+kmod-usb-net-cdc-ether)
 endef
 
 define KernelPackage/usb-net-cdc-ncm/description
