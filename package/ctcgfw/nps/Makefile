@@ -1,6 +1,6 @@
 #
 # Copyright (C) 2021 ImmortalWrt
-# <https://project-openwrt.eu.org>
+# <https://immortalwrt.org>
 #
 # This is free software, licensed under the GNU General Public License v3.
 #
@@ -9,7 +9,7 @@ include $(TOPDIR)/rules.mk
 
 PKG_NAME:=nps
 PKG_VERSION:=0.26.9
-PKG_RELEASE:=3
+PKG_RELEASE:=4
 
 PKG_SOURCE:=$(PKG_NAME)-$(PKG_VERSION).tar.gz
 PKG_SOURCE_URL:=https://codeload.github.com/ehang-io/nps/tar.gz/v$(PKG_VERSION)?
@@ -17,7 +17,7 @@ PKG_HASH:=7df414180ed4f0049dc08f0e3c625a6de4ebed34da591515f9514b3763dd578d
 
 PKG_LICENSE:=Apache-2.0
 PKG_LICENSE_FILE:=LICENSE
-PKG_MAINTAINTER:=CN_SZTL <cnsztl@project-openwrt.eu.org>
+PKG_MAINTAINTER:=CN_SZTL <cnsztl@immortalwrt.org>
 
 PKG_CONFIG_DEPENDS := \
 	CONFIG_NPC_COMPRESS_UPX \
@@ -81,6 +81,15 @@ ifeq ($(CONFIG_NPS_COMPRESS_UPX),y)
 	$(STAGING_DIR_HOST)/bin/upx --lzma --best $(GO_PKG_BUILD_BIN_DIR)/nps
 endif
 endef
+
+define Package/nps/install/template
+	$(call GoPackage/Package/Install/Bin,$(PKG_INSTALL_DIR))
+	$(INSTALL_DIR) $(1)/usr/bin
+	$(INSTALL_BIN) $(PKG_INSTALL_DIR)/usr/bin/$(2) $(1)/usr/bin/$(2)
+endef
+
+Package/npc/install = $(call Package/nps/install/template,$(1),npc)
+Package/nps/install = $(call Package/nps/install/template,$(1),nps)
 
 $(eval $(call GoBinPackage,npc))
 $(eval $(call GoBinPackage,nps))
