@@ -80,7 +80,6 @@ local api = require "luci.model.cbi.passwall.api.api"
 		var opt = {
 			base: "cbid.passwall",
 			client : true,
-			fallback: "dummy",
 			get: function(opt) {
 				var id = this.base + "." + opt;
 				var obj = document.getElementsByName(id)[0] || document.getElementsByClassName(id)[0] || document.getElementById(id)
@@ -88,13 +87,6 @@ local api = require "luci.model.cbi.passwall.api.api"
 					return obj;
 				} else {
 					return null;
-					/*
-					obj = document.getElementById(this.fallback);
-					if  (opt === "address") obj.value = "0.0.0.0";
-					else if (opt === "mux") obj.value = "0";
-					if (this.client || (opt !== "address" && opt !== "mux")) alert("<%:Faltal on get option, please help in debug: %>" + opt);
-					return obj;
-					*/
 				}
 			},
 			getlist: function(opt) {
@@ -131,7 +123,6 @@ local api = require "luci.model.cbi.passwall.api.api"
 		}
 		opt.base = "cbid." + urlname + "." + sid;
 		opt.client = urlname.indexOf("server") === -1;
-		opt.fallback = urlname + "-dummy";
 		var v_type = opt.get("type").value;
 		var v_alias = opt.get("remarks");
 		var url = null;
@@ -274,17 +265,21 @@ local api = require "luci.model.cbi.passwall.api.api"
 			}
 			url += params;
 		} else if ((v_type === "Xray" && opt.get("protocol").value === "trojan") || v_type === "Trojan" || v_type === "Trojan-Plus" || v_type === "Trojan-Go") {
+			if (v_type === "Xray" && opt.get("protocol").value === "trojan") {
+				v_type = "trojan";
+			}
 			var v_password = opt.get(!opt.client && v_type === "Trojan-Go"  ? "passwords" : "password");
 			var v_server = opt.get("address");
 			var v_port = opt.get("port");
 			url = encodeURIComponent(v_password.value) +
 				"@" + v_server.value +
 				":" + v_port.value + "/?";
+			var params = "";
 			if (opt.get("tls").checked) {
-				url += opt.query("sni", "tls_serverName");
+				params += opt.query("sni", "tls_serverName");
 				if (v_type !== "Trojan-Go") {
-					url += "&tls=1"
-					url += opt.query("allowinsecure", "tls_allowInsecure");
+					params += "&tls=1"
+					params += opt.query("allowinsecure", "tls_allowInsecure");
 				}
 			}
 			if (v_type === "Trojan-Go") {
@@ -296,17 +291,17 @@ local api = require "luci.model.cbi.passwall.api.api"
 						plugin.option = opt.get("plugin_option").value;
 						plugin.arg = opt.getlist("plugin_arg");
 					}
-					url += "&plugin=" + encodeURIComponent(JSON.stringify(plugin));
+					params += "&plugin=" + encodeURIComponent(JSON.stringify(plugin));
 				}
-				url += opt.query("type", "trojan_transport");
+				params += opt.query("type", "trojan_transport");
 				var ws = (opt.get("trojan_transport").value.indexOf("ws") !== -1);
 				var h2 = (opt.get("trojan_transport").value.indexOf("h2") !== -1);
 				if (ws) {
-					url += opt.query("host", "ws_host");
-					url += opt.query("path", "ws_path");
+					params += opt.query("host", "ws_host");
+					params += opt.query("path", "ws_path");
 				} else if (h2) {
-					url += opt.query("host", "h2_host");
-					url += opt.query("path", "h2_path");
+					params += opt.query("host", "h2_host");
+					params += opt.query("path", "h2_path");
 				}
 				var enc = "none";
 				if (opt.get("ss_aead").checked === true) {
@@ -314,9 +309,13 @@ local api = require "luci.model.cbi.passwall.api.api"
 						opt.get("ss_aead_method").value +
 						":" + opt.get("ss_aead_pwd").value;
 				}
-				url += "&encryption=" + encodeURIComponent(enc);
+				params += "&encryption=" + encodeURIComponent(enc);
 			}
-			url += "#" + encodeURI(v_alias.value);
+			params += "#" + encodeURI(v_alias.value);
+			if (params[0] == "&") {
+				params = params.substring(1);
+			}
+			url += params;
 		}
 		if (url) {
 			url = v_type.toLowerCase() + "://" + url;
@@ -327,9 +326,9 @@ local api = require "luci.model.cbi.passwall.api.api"
 			textarea.select();
 			try {
 				document.execCommand("copy"); // Security exception may be thrown by some browsers.
-				s.innerHTML = "<font color='green'><%:Share url to clipboard successfully.%></font>";
+				s.innerHTML = "<font color='green'><%:Share URL to clipboard successfully.%></font>";
 			} catch (ex) {
-				s.innerHTML = "<font color='red'><%:Share url to clipboard unable.%></font>";
+				s.innerHTML = "<font color='red'><%:Share URL to clipboard unable.%></font>";
 			} finally {
 				document.body.removeChild(textarea);
 			}
@@ -344,7 +343,6 @@ local api = require "luci.model.cbi.passwall.api.api"
 		var opt = {
 			base: 'cbid.passwall',
 			client : true,
-			fallback: 'dummy',
 			get: function(opt) {
 				var obj;
 				var id = this.base + '.' + opt;
@@ -352,8 +350,7 @@ local api = require "luci.model.cbi.passwall.api.api"
 				if (obj) {
 					return obj;
 				} else {
-					if (this.client || (opt !== "address" && opt !== "mux")) alert('<%:Faltal on get option, please help in debug: %>' + opt);
-					return document.getElementById(this.fallback);
+					return null;
 				}
 			},
 			set: function(opt, val) {
@@ -394,7 +391,6 @@ local api = require "luci.model.cbi.passwall.api.api"
 		}
 		opt.base = "cbid." + urlname + "." + sid;
 		opt.client = urlname.indexOf("server") === -1;
-		opt.fallback = urlname + '-dummy';
 		var ssrurl = prompt('<%:Paste Share URL Here%>', '');
 		if (ssrurl === null || ssrurl === "") {
 			return false;
@@ -785,7 +781,6 @@ local api = require "luci.model.cbi.passwall.api.api"
 	}
 
 //]]></script>
-<input type="text" class="hidden" id='<%=self.option%>-dummy' value="" />
 <input type="button" class="cbi-button cbi-button-apply" value='<%:From Share URL%>' onclick="return fromUrl(this, '<%=self.option%>', '<%=self.value%>')" />
 <input type="button" class="cbi-button cbi-button-apply" value='<%:Build Share URL%>' onclick="return buildUrl(this, '<%=self.option%>', '<%=self.value%>')" />
 <span id="<%=self.option%>-status"></span>
